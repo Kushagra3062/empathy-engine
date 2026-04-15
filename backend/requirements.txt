@@ -1,0 +1,38 @@
+fastapi
+uvicorn
+pydantic>=2.0.0
+pydantic-settings
+python-dotenv
+aiofiles
+loguru
+
+# ML/NLP
+torch
+transformers
+vaderSentiment
+scikit-learn
+numpy
+pandas
+
+# TTS & Audio
+google-cloud-texttospeech
+elevenlabs
+pyttsx3
+librosa
+scipy
+soundfile
+pydub
+
+# Utilities
+httpx
+requests
+python-multipart
+
+# Testing
+pytest
+pytest-asyncio
+
+# Database & Caching
+sqlalchemy
+psycopg2-binary
+redis

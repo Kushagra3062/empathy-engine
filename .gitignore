@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+
+# Database
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Audio & Logs (Project specific)
+temp_audio/
+logs/
+*.log
+
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+.parcel-cache
+.pnp
+.pnp.js
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
