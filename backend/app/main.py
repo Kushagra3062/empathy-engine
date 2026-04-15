@@ -3,8 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routes import api, health
 from app.utils.logger import setup_logging
+from app.database import init_db
+from app import db_models # Ensure models are registered
 
 setup_logging(settings.LOG_LEVEL)
+
+# Initialize database tables
+init_db()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

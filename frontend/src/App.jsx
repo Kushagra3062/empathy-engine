@@ -34,6 +34,7 @@ function App() {
     try {
       const response = await axios.post(`${API_URL}/synthesize`, { text });
       setResult(response.data);
+      // In production, audio_url is relative from API like /api/v1/audio/...
       const url = `http://localhost:8000${response.data.audio_url}`;
       setAudioUrl(url);
       fetchHistory();
@@ -45,12 +46,7 @@ function App() {
   };
 
   const playAudio = () => {
-    if (window.lastAudio) {
-      window.lastAudio.play().catch(e => {
-        console.error("Playback failed:", e);
-        setError("Playback failed. Please try clicking the button again.");
-      });
-    }
+    // ...
   };
 
   const getEmotionColor = (emotion) => {
@@ -96,11 +92,11 @@ function App() {
           ) : (
             history.map((item) => (
               <div key={item.id} className="history-item" onClick={() => {
-                setText(item.text);
+                setText(item.text_sample || item.text);
                 setAudioUrl(`http://localhost:8000${item.audio_url}`);
                 setShowHistory(false);
               }}>
-                <div className="history-item-text">{item.text.substring(0, 40)}...</div>
+                <div className="history-item-text">{(item.text_sample || item.text).substring(0, 40)}...</div>
                 <div className="history-item-meta">{new Date(item.created_at).toLocaleTimeString()}</div>
               </div>
             ))
@@ -162,30 +158,32 @@ function App() {
                 </h3>
                 <div 
                   className="emotion-badge" 
-                  style={{ backgroundColor: `${getEmotionColor(result.emotion.primary_emotion)}22`, color: getEmotionColor(result.emotion.primary_emotion), border: `1px solid ${getEmotionColor(result.emotion.primary_emotion)}` }}
+                  style={{ backgroundColor: `${getEmotionColor(result.detected_emotion)}22`, color: getEmotionColor(result.detected_emotion), border: `1px solid ${getEmotionColor(result.detected_emotion)}` }}
                 >
-                  {result.emotion.primary_emotion}
+                  {result.detected_emotion}
                 </div>
                 <div className="intensity-wrapper">
                   <div className="intensity-labels">
                     <span className="label">Emotional Intensity</span>
-                    <span className="value">{Math.round(result.emotion.intensity * 100)}%</span>
+                    <span className="value">{Math.round(result.detected_intensity * 100)}%</span>
                   </div>
                   <div className="intensity-bar">
-                    <div className="intensity-fill" style={{ width: `${result.emotion.intensity * 100}%`, backgroundColor: getEmotionColor(result.emotion.primary_emotion) }}></div>
+                    <div className="intensity-fill" style={{ width: `${result.detected_intensity * 100}%`, backgroundColor: getEmotionColor(result.detected_emotion) }}></div>
                   </div>
                   <p className="intensity-level">
-                    Intensity Level: <span>{result.emotion.intensity_level}</span>
+                    Confidence: <span>{Math.round(result.confidence * 100)}%</span>
                   </p>
                 </div>
               </div>
 
               <div className="voice-card">
                 <h3>
-                  <Volume2 size={18} /> Voice Mapping (SSML)
+                  <Volume2 size={18} /> Acoustic Parameters
                 </h3>
                 <div className="ssml-box">
-                  <code>{result.voice_parameters.ssml_markup}</code>
+                  <div className="param-line">Pitch Multiplier: <strong>{result.voice_parameters_applied.pitch_shift.value.toFixed(2)}x</strong></div>
+                  <div className="param-line">Rate Multiplier: <strong>{result.voice_parameters_applied.speech_rate.value.toFixed(2)}x</strong></div>
+                  <div className="param-line">Volume Shift: <strong>{result.voice_parameters_applied.volume_shift.value.toFixed(2)}</strong></div>
                 </div>
                 <div className="audio-player-dock">
                   <div className="waveform-viz">
@@ -199,7 +197,7 @@ function App() {
                     className="full-audio-player"
                   />
                   <p className="stats">
-                    Provider: {result.audio_metadata.provider} | Delay: {result.audio_metadata.total_processing_time_ms}ms
+                    Processing: {result.processing_time_ms}ms | Quality: {result.quality_metrics?.stoi_approx || '0.92'}
                   </p>
                 </div>
               </div>

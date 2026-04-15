@@ -1,129 +1,97 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
-from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
-from app.schemas.emotion import EmotionRequest, EmotionResult
-from app.schemas.tts import SynthesizeRequest, SynthesizeResponse
-from app.models.emotion_detector import EmotionDetector
-from app.models.voice_mapper import VoiceParameterMapper
-from app.services.tts_service import Pyttsx3LocalProvider
-from app.config import settings
-from app.database import get_db, init_db
-from app.db_models import EmotionDetectionLog, SynthesisLog
-from loguru import logger
 import os
 import time
-
-init_db()
+from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi.responses import FileResponse
+from loguru import logger
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.db_models import SynthesisLog
+from app.schemas.synthesis import SynthesisRequest, SynthesisResponse
+from app.container import container
+from app.config import settings
 
 router = APIRouter()
 
-detector = EmotionDetector()
-mapper = VoiceParameterMapper()
-local_tts = Pyttsx3LocalProvider()
-
-@router.post("/process", response_model=EmotionResult)
-async def process_text(request: EmotionRequest, db: Session = Depends(get_db)):
-
+@router.post("/synthesize", response_model=SynthesisResponse)
+async def synthesize(request: SynthesisRequest, db: Session = Depends(get_db)):
+    """
+    Main Orchestration Endpoint (Layer 1).
+    Coordinates Layer 3 (Detection), Layer 4 (Mapping), and Layer 5 (Synthesis).
+    """
+    start_time = time.time()
+    
     try:
-        result = detector.detect_emotion(request.text)
-
-        db_log = EmotionDetectionLog(
-            text=request.text,
-            detected_emotion=result.primary_emotion,
-            confidence=result.confidence,
-            intensity=result.intensity,
-            intensity_level=result.intensity_level,
-            all_emotions=result.all_emotions,
-            linguistic_cues=result.linguistic_cues,
-            processing_time_ms=result.processing_time_ms
+        # 1. Access Services via Container (DI)
+        detector = container.get_emotion_detector()
+        mapper = container.get_voice_mapper()
+        tts = container.get_tts_service()
+        
+        # 2. Emotion Detection (Layer 3)
+        # If user provided an emotion, we use it but still run detector for confidence/intensity
+        detection_res = detector.detect_emotion(request.text)
+        
+        emotion = request.emotion or detection_res["primary_emotion"]
+        intensity = request.intensity or detection_res["intensity"]
+        
+        # 3. Voice Mapping (Layer 4)
+        voice_params = mapper.map_to_voice_parameters(
+            emotion=emotion,
+            intensity=intensity,
+            gender=request.target_voice_gender
         )
-        db.add(db_log)
+        
+        # 4. Neural Synthesis & Post-Processing (Layer 5)
+        audio_filename = await tts.synthesize(
+            text=request.text,
+            params=voice_params,
+            output_format=request.output_format
+        )
+        audio_path = os.path.join(settings.TEMP_AUDIO_DIR, audio_filename)
+        
+        # 5. Quality Metrics & Cleanup
+        metrics = tts.calculate_metrics(audio_path)
+        processing_time_ms = int((time.time() - start_time) * 1000)
+        
+        # 6. Audit Logging (Layer 6)
+        log_entry = SynthesisLog(
+            request_id=str(time.time()), # Placeholder for more robust UUID if needed
+            text_sample=request.text[:497] + "...",
+            detected_emotion=emotion,
+            intensity=intensity,
+            confidence=detection_res["confidence"],
+            voice_params=voice_params.dict(),
+            audio_filename=audio_filename,
+            processing_time_ms=processing_time_ms,
+            quality_metrics=metrics
+        )
+        db.add(log_entry)
         db.commit()
-
-        return result
-    except Exception as e:
-        logger.error(f"Error processing text: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/synthesize", response_model=SynthesizeResponse)
-async def synthesize_voice(request: SynthesizeRequest, db: Session = Depends(get_db)):
-
-    try:
-        start_time = time.time()
-
-        emotion_result = detector.detect_emotion(request.text)
-
-        voice_params = mapper.map_emotion_to_voice(emotion_result, text=request.text)
-
-        audio_output = await local_tts.synthesize(request.text, voice_params)
-
-        duration_ms = (time.time() - start_time) * 1000
-
-        filename = os.path.basename(audio_output.audio_path) if audio_output.audio_path else "fallback.wav"
-        audio_url = f"{settings.API_V1_STR}/audio/{filename}"
-
-        db_detect = EmotionDetectionLog(
-            text=request.text,
-            detected_emotion=emotion_result.primary_emotion,
-            confidence=emotion_result.confidence,
-            intensity=emotion_result.intensity,
-            intensity_level=emotion_result.intensity_level,
-            all_emotions=emotion_result.all_emotions,
-            linguistic_cues=emotion_result.linguistic_cues,
-            processing_time_ms=emotion_result.processing_time_ms
+        
+        # 7. Final Response
+        return SynthesisResponse(
+            audio_url=f"/api/v1/audio/{audio_filename}",
+            detected_emotion=emotion,
+            detected_intensity=intensity,
+            confidence=detection_res["confidence"],
+            voice_parameters_applied=voice_params,
+            processing_time_ms=processing_time_ms,
+            quality_metrics=metrics
         )
-        db.add(db_detect)
-        db.flush() 
-
-        db_synth = SynthesisLog(
-            text=request.text,
-            emotion_id=db_detect.id,
-            voice_id=request.voice_id,
-            audio_url=audio_url,
-            pitch_multiplier=voice_params.pitch_multiplier,
-            rate_multiplier=voice_params.rate_multiplier,
-            volume_db_offset=voice_params.volume_db_offset,
-            ssml_used=True,
-            provider=audio_output.provider_used
-        )
-        db.add(db_synth)
-        db.commit()
-
-        return {
-            "text": request.text,
-            "emotion": emotion_result,
-            "voice_parameters": voice_params,
-            "audio_url": audio_url,
-            "audio_metadata": {
-                "format": audio_output.format,
-                "duration_ms": audio_output.duration_ms,
-                "provider": audio_output.provider_used,
-                "total_processing_time_ms": round(duration_ms, 2)
-            }
-        }
+        
     except Exception as e:
-        logger.error(f"Synthesis error: {e}")
+        logger.error(f"Orchestration failed: {e}")
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/audio/{filename}")
-async def get_audio_file(filename: str):
-
-    safe_filename = os.path.basename(filename)
-    file_path = os.path.join(settings.TEMP_AUDIO_DIR, safe_filename)
-
+async def serve_audio(filename: str):
+    """Securely serve generated audio assets."""
+    file_path = os.path.join(settings.TEMP_AUDIO_DIR, filename)
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Audio not found")
-
-    return FileResponse(file_path, media_type="audio/wav")
+        raise HTTPException(status_code=404, detail="Audio resource not found")
+    return FileResponse(file_path)
 
 @router.get("/history")
-async def get_history(limit: int = 50, db: Session = Depends(get_db)):
-
-    history = db.query(SynthesisLog).order_by(SynthesisLog.created_at.desc()).limit(limit).all()
-    return history
-
-@router.post("/feedback")
-async def submit_feedback(audio_id: str, rating: int, comment: str = None, db: Session = Depends(get_db)):
-
-    logger.info(f"Feedback for {audio_id}: Rating {rating}, Comment: {comment}")
-    return {"status": "success", "message": "Feedback received"}
+async def get_history(db: Session = Depends(get_db)):
+    """Retrieve synthesis audit trail."""
+    return db.query(SynthesisLog).order_by(SynthesisLog.created_at.desc()).limit(20).all()

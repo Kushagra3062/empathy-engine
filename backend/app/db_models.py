@@ -1,34 +1,31 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, JSON, Text, ForeignKey, Boolean
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
-import uuid
+from sqlalchemy import Column, String, Float, DateTime, JSON, Integer
 from .database import Base
-
-class EmotionDetectionLog(Base):
-    __tablename__ = "emotion_detection_logs"
-
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    text = Column(Text, nullable=False)
-    detected_emotion = Column(String(50), index=True)
-    confidence = Column(Float)
-    intensity = Column(Float)
-    intensity_level = Column(String(20))
-    all_emotions = Column(JSON)
-    linguistic_cues = Column(JSON)
-    processing_time_ms = Column(Float)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+from datetime import datetime
+from uuid import uuid4
 
 class SynthesisLog(Base):
+    """
+    Layer 6 Audit Log: Tracks every synthesis event with full metadata.
+    """
     __tablename__ = "synthesis_logs"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    text = Column(Text, nullable=False)
-    emotion_id = Column(String(36), ForeignKey("emotion_detection_logs.id"))
-    voice_id = Column(String(100))
-    audio_url = Column(String(255))
-    pitch_multiplier = Column(Float)
-    rate_multiplier = Column(Float)
-    volume_db_offset = Column(Float)
-    ssml_used = Column(Boolean, default=False)
-    provider = Column(String(50))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    id = Column(Integer, primary_key=True, index=True)
+    request_id = Column(String, unique=True, index=True, default=lambda: str(uuid4()))
+    text_sample = Column(String(500))
+    detected_emotion = Column(String)
+    intensity = Column(Float)
+    confidence = Column(Float)
+    voice_params = Column(JSON)
+    audio_filename = Column(String)
+    processing_time_ms = Column(Float)
+    quality_metrics = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class SystemMetrics(Base):
+    """Tracks global system performance KPIs."""
+    __tablename__ = "system_metrics"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    metric_name = Column(String)
+    metric_value = Column(Float)
+    timestamp = Column(DateTime, default=datetime.utcnow)
