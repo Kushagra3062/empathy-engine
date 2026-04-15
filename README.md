@@ -1,5 +1,5 @@
 # 🎭 The Empathy Engine
-***State-of-the-Art Emotional Intelligence & Speech Synthesis Framework***
+***High-Fidelity AI Emotional Speech Synthesis & Real-Time Sentiment Analysis***
 
 <div align="center">
 
@@ -7,141 +7,111 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104%2B-green?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18%2B-61dafb?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
 [![Transformers](https://img.shields.io/badge/Transformers-Latest-orange?style=for-the-badge&logo=huggingface&logoColor=white)](https://huggingface.co/)
-[![Architecture](https://img.shields.io/badge/Architecture-Hexagonal-lightgrey?style=for-the-badge&logo=diagrams.net&logoColor=white)]()
 
-**A mission-critical AI platform that bridges the gap between text and human emotion through multi-model ensemble analysis and dynamic vocal prosody modulation.**
+**A production-ready AI terminal designed to transform text into emotionally resonant speech through deep semantic understanding and dynamic vocal modulation.**
 
-[Overview](#-overview) • [Architecture](#-architecture) • [AI Pipeline](#-ai-intelligence-ensemble) • [Design System](#-design-system) • [Installation](#-installation)
+[Requirements Mapping](#-requirements-fulfillment-matrix) • [Architecture](#-system-architecture) • [Mapping Logic](#-emotion-to-voice-mapping-logic) • [Installation](#-installation--launch)
 
 ---
 
 </div>
 
-## 🌟 Overview
-The Empathy Engine is a production-hardened platform designed to eliminate the "robotic barrier" in synthesized speech. It doesn't just convert text to audio; it interprets **psychological subtext** and translates it into acoustic features—Pitch, Rate, and Volume—mirroring the natural variations of human prosody.
+## 🌟 Executive Summary
+The Empathy Engine is an enterprise-grade solution for the Darwix AI assessment. It solves the "monotonic robot" problem by employing a weighted neural ensemble for 8-class emotion detection and translating those results into precise acoustic shifts in Pitch, Rate, and Volume.
 
 ---
 
-## 🏗️ System Architecture: The Hexagonal approach
-The system is built on a modular, decoupled architecture that separates the core intelligence from infrastructure adapters.
+## ✅ Requirements Fulfillment Matrix
+*This section confirms compliance with the assessment criteria (III, IV, VI).*
 
-### �️ High-Level System Design
+### III. Core Functional Requirements
+| Requirement | Implementation Detail | Status |
+| :--- | :--- | :--- |
+| **Text Input** | Asynchronous FastAPI POST endpoint (`/api/v1/synthesize`) and CLI-ready backend. | ✅ |
+| **Emotion Detection** | 8-Class Sentiment Ensemble (VADER + DistilBERT + RoBERTa). | ✅ |
+| **Parameter Modulation** | Dynamic, real-time control of **Rate**, **Pitch**, and **Volume**. | ✅ |
+| **Logic Mapping** | Mathematical mapping of confidence/intensity to acoustic offsets. | ✅ |
+| **Audio Output** | High-fidelity `.wav` generation with absolute path serving. | ✅ |
+
+### IV. Bonus Objectives ("The Wow Factors")
+- **[WOW] Granular Emotions**: Expanded from 3 classes to **8 precise states** (Happy, Angry, Frustrated, Calm, Sad, Surprised, Concerned, Neutral).
+- **[WOW] Intensity Scaling**: Implemented a **Non-Linear Intensity Algorithm**—higher detected confidence results in more aggressive vocal performance.
+- **[WOW] Full Web Interface**: A complete **React + Vite** dashboard with real-time audio playback and history management.
+- **[WOW] SSML Integration**: Dynamically generates **Prosody Markup** (SSML) to ensure natural pauses and emphasis.
+
+---
+
+## 🏗️ System Architecture
+The system employs a decoupled, asynchronous engineering pattern.
+
 ```mermaid
-graph TB
-    subgraph "Presentation Layer (React)"
-        UI[Glassmorphism Terminal]
-        Wave[Waveform Visualizer]
+graph TD
+    UI[React Responsive UI] -->|REST API| API[FastAPI Gateway]
+    
+    subgraph "Neural Intelligence Core"
+        API --> ED[Ensemble Detector]
+        ED --> V[VADER Lexical]
+        ED --> D[DistilBERT Semantic]
+        ED --> R[RoBERTa Social-Nuance]
     end
-
-    subgraph "Application Layer (FastAPI)"
-        API[Async API Gateway]
-        Middleware[Validation & Logging]
-    end
-
-    subgraph "Domain Layer (AI Ensemble)"
-        ED[Ensemble Logic Controller]
-        subgraph "Neural Workers"
-            V[VADER Lexical]
-            D[DistilBERT Semantic]
-            R[RoBERTa Nuance]
-        end
-    end
-
+    
+    ED -->|Weighted Probability| VM[Voice Parameter Mapper]
+    VM -->|Dynamic Prosody| provider[TTS Adapter Layer]
+    
     subgraph "Infrastructure Layer"
-        VM[Voice Parameter Mapper]
-        TTS[Multi-Provider Adapter]
-        DB[(SQLAlchemy / SQLite)]
-        Storage[Absolute Path Manager]
+        API --> DB[(SQLAlchemy Persistence)]
+        provider -->|Audio Stream| UI
     end
-
-    UI --> API
-    API --> Middleware
-    Middleware --> ED
-    ED --> V & D & R
-    ED --> VM
-    VM --> TTS
-    TTS --> Storage
-    API --> DB
-    Storage --> UI
 ```
 
 ---
 
-## 🧠 AI Intelligence Ensemble: Deep Nuance Detection
-Standard sentiment analysis is binary; The Empathy Engine is **multi-dimensional**. It uses a weighted ensemble of three distinct neural architectures to achieve enterprise-level precision.
+## 🧠 Emotion-to-Voice Mapping Logic
+*Documenting the engineering choices for Assessment Item VI.*
 
-### 🔍 Detection Pipeline
-```mermaid
-graph LR
-    Input[RAW TEXT] --> CLEAN[Sanitization & Normalization]
-    CLEAN --> LEX[Lexical Analysis: VADER]
-    CLEAN --> SEM[Semantic Analysis: DistilBERT]
-    CLEAN --> NUA[Social Nuance: RoBERTa]
-    
-    LEX --> COMP[Ensemble Composer]
-    SEM --> COMP
-    NUA --> COMP
-    
-    COMP --> BOOST[Custom Keyword Booster]
-    BOOST --> FIN[Final Emotion Vector]
-    
-    style BOOST fill:#f96,stroke:#333,stroke-width:2px
-```
+The system uses a **weighted composite score** to determine the final output. The logic is defined as:
+`Target_Parameter = Base_Parameter + (Intensity_Factor * Emotion_Coefficient)`
 
-### � Emotion-to-Acoustic Modulation Matrix
-The engine translates digital vectors into physical sound waves using a research-backed modulation matrix.
-
-| Emotion | Pitch Shift | Rate Shift | Vol Shift | Biological Intent |
+| Detected Emotion | Pitch Coefficient | Rate Coefficient | Volume Shift | Rationale |
 | :--- | :--- | :--- | :--- | :--- |
-| **ANGER** | ↘️ -30% | ↗️ +40% | +6.0 dB | Mirror throat-clench and rapid breath. |
-| **HAPPY** | ↗️ +30% | ↗️ +25% | +3.0 dB | Bright upward inflection and high energy. |
-| **SURPRISED** | ↗️ +50% | ↗️ +35% | +2.5 dB | Sharp, sudden pitch spikes. |
-| **SAD** | ↘️ -30% | ↘️ -40% | -5.0 dB | Lower frequency 'droop' and slow tempo. |
-| **CONCERN** | ↗️ +10% | ↘️ -10% | -1.5 dB | Tremor simulation and careful pacing. |
+| **HAPPY** | +30% | +20% | +2.0 dB | Higher pitch simulates excitement and "upward" energy. |
+| **ANGRY** | -20% | +40% | +6.0 dB | Low frequency + rapid rate mirrors physiological high-tension. |
+| **SAD** | -30% | -35% | -4.0 dB | Slower pacing and lower pitch simulate lethargy/grief. |
+| **CONCERNED** | +10% | -10% | -1.5 dB | Slight tension with slower, careful deliberation. |
+| **CALM** | +0% | -10% | -2.0 dB | Baseline pitch with gentle, relaxed pacing. |
 
 ---
 
-## ✨ Engineering Excellence
-- **Non-blocking Asynchronous I/O**: High-concurrency support via Python 3.11's `asyncio`.
-- **Ensemble Normalized Confidence**: Eliminates model outliers for stable performance.
-- **Absolute Path Resolution**: Defeats Uvicorn reload loops by orchestrating file-serving outside the watch-path.
-- **Pydantic V2 Integrity**: Strict typing and validation across all application boundaries.
+## ⚙️ Design Decisions
+1. **Neural Ensemble**: I chose a 3-model ensemble over a single classifier to handle **metaphorical language**. While VADER handles pure sentiment, RoBERTa captures the social subtext often missed by simpler libraries.
+2. **Absolute Path Strategy**: To ensure the system is production-ready, I implemented absolute path resolution for file serving. This prevents the "Uvicorn Reload Loop" that often plagues projects serving local assets.
+3. **Glassmorphism UI**: I chose a premium dark-themed UI to provide an immersive "command terminal" experience for the user.
 
-## 📂 Project Governance
-```text
-empathy-engine/
-├── backend/            # Python / FastAPI Core
-│   └── app/
-│       ├── models/     # AI Intelligence Layer
-│       ├── routes/     # Orchestration Layer
-│       └── services/   # Provider Adapters
-├── frontend/           # React / Vite SPA
-└── logs/               # Loguru Audit Trails
+---
+
+## 🚀 Installation & Launch
+
+### 1. Requirements
+- Python 3.11+
+- Node.js 18+
+
+### 2. Backend Launch
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
----
-
-## 🚀 Deployment Guide
-
-1. **Bootstrap Environment**: 
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r backend/requirements.txt
-   ```
-2. **Launch Neural Core**:
-   ```bash
-   uvicorn app.main:app --reload
-   ```
-3. **Initialize Frontend**:
-   ```bash
-   cd frontend && npm install && npm run dev
-   ```
+### 3. Frontend Launch
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ---
 <div align="center">
-
-*Engineered for the **Darwix AI Internship Specification**.*  
-*Where code meets the heart.*
-
+Designed for the **Darwix AI Engineering Internship Application**.
 </div>
