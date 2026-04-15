@@ -5,7 +5,7 @@ import os
 from loguru import logger
 from app.config import settings
 
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{settings.BASE_DIR.parent}/empathy_engine.db")
+DATABASE_URL = settings.DATABASE_URL or f"sqlite:///{settings.BASE_DIR.parent}/empathy_engine.db"
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 

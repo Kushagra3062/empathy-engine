@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: Optional[str] = None
     
     # Database
-    DATABASE_URL: Optional[str] = None
+    DATABASE_URL: Optional[str] = f"sqlite:///../../empathy_engine_v2.db"
     REDIS_URL: Optional[str] = None
     
     # Logging
